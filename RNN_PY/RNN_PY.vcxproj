@@ -143,12 +143,16 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="csvparser.c" />
+    <ClCompile Include="layer.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MLP_Functions.cpp" />
+    <ClCompile Include="rnn.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="csvparser.h" />
+    <ClInclude Include="layer.h" />
     <ClInclude Include="MLP_Functions.h" />
+    <ClInclude Include="rnn.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
