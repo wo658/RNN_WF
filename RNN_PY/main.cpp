@@ -1,6 +1,7 @@
 #include "MLP_Functions.h"
 #include "Layer.h"
-
+#include "rnn.h"
+#include <cmath>
 #include <windows.h>
 int main() {
 	//Regression 
@@ -21,4 +22,56 @@ int main() {
 	splitData(train, x_train, y_train);
 	splitData(test, x_test, y_test);
 
+	// 정규화 최대 최소 범위 구하기
+	double max = x_train[0][0], min = x_train[0][0];
+	double max_y = y_train[0][0], min_y = y_train[0][0];
+	for (int i = 0; i < x_train.size(); i++) {
+		for (int j = 0; j < x_train[0].size(); j++) {
+			if (max < x_train[i][j])
+				max = x_train[i][j];
+			if (min > x_train[i][j])
+				min = x_train[i][j];
+		}
+		if (max_y < y_train[i][0])
+			max_y = y_train[i][0];
+		if (min_y > y_train[i][0])
+			min_y = y_train[i][0];
+
+
+	}
+
+	//cout << max << " " << min << endl;
+	// 정규화 0 ~ 1 
+	for (int i = 0; i < x_train.size(); i++) {
+		for (int j = 0; j < x_train[0].size(); j++) {
+			x_train[i][j] = (x_train[i][j] - min) / (max - min);
+		}
+		// 선택사항 1 y 정규화
+		// 1 . 회귀 문제의 경우 타겟값이 넓은 범위에 걸쳐 있을 때 정규화
+		y_train[i][0] = (y_train[i][0] - min_y) / (max_y - min_y);
+	}
+
+
+
+
+	hidden_layer h(x_train[0].size(), 30 , 1);
+	in_layer i(x_train[0].size());
+	out_layer o(1);
+
+	h.init();
+
+
+	rnn rnn(h,o,i);
+	double error = 0;
+	for (int epoch = 1; epoch < 100; epoch++) {
+	
+	//	rnn.feedforward();
+	//	rnn.backpropagation();
+	//	error = rnn.loss_cal();
+
+		cout <<epoch << "epoch is : " << error << endl;
+	}
+
+	system("pause");
 }
+
