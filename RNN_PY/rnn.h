@@ -12,11 +12,9 @@ public:
 	out_layer o_layer;
 	in_layer i_layer;
 
-	// data ÀÇ °³¼ö
-	void feedforward(std::vector < std::vector<double >> train);
+	
+	double feedforward(std::vector < double >& train );
 	void backpropagation();
-	double loss_cal();
-
 
 };
 

@@ -38,7 +38,8 @@ public:
 	hidden_layer(int pre_num, int num, int next_num);
 	
 	void init();
-
+	std::vector<double> h_new;
+	std::vector<std::vector<double>> h_states;
 	std::vector <std::vector <double>> w_to_h;
 	std::vector <std::vector <double>> h_to_h;
 	std::vector <std::vector <double>> h_to_o;

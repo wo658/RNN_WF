@@ -39,7 +39,8 @@ hidden_layer::hidden_layer(int pre_num,int num,int next_num):node_pre_num(pre_nu
 	value.resize(num);
 	bias.resize(num);
 	activate_value.resize(num);
-
+	for (int i = 0; i < num;i++)
+		h_new.push_back(0);
 }
 void hidden_layer::init() {
 	for (int i = 0; i < node_pre_num; i++)

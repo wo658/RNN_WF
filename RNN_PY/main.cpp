@@ -53,23 +53,26 @@ int main() {
 
 
 
-
-	hidden_layer h(x_train[0].size(), 30 , 1);
+	// √ ±‚»≠
+	hidden_layer h(x_train[0].size(),30 , 1);
 	in_layer i(x_train[0].size());
 	out_layer o(1);
-
 	h.init();
-
-
 	rnn rnn(h,o,i);
-	double error = 0;
-	for (int epoch = 1; epoch < 100; epoch++) {
-	
-	//	rnn.feedforward();
-	//	rnn.backpropagation();
-	//	error = rnn.loss_cal();
+	double output = 0;
+	double exp,error=0;
 
-		cout <<epoch << "epoch is : " << error << endl;
+	for (int epoch = 1; epoch < 10; epoch++) {
+		for (int train_size = 0; train_size < x_train.size(); train_size++) {
+			exp = rnn.feedforward(x_train[train_size]);
+			error += (exp - y_train[train_size][0]) * ( exp - y_train[train_size][0]);
+			//	rnn.backpropagation();
+			
+
+		}
+		cout << epoch << "epoch is : " << error << endl;
+		error = 0;
+
 	}
 
 	system("pause");
