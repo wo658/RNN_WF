@@ -64,6 +64,9 @@ int main() {
 
 	for (int epoch = 1; epoch < 10; epoch++) {
 		for (int train_size = 0; train_size < x_train.size(); train_size++) {
+
+
+
 			exp = rnn.feedforward(x_train[train_size]);
 			error += (exp - y_train[train_size][0]) * ( exp - y_train[train_size][0]);
 			//	rnn.backpropagation();
