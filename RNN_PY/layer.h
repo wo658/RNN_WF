@@ -30,6 +30,10 @@ class out_layer : public layer {
 public:
 	out_layer(int num);
 
+	std::vector <double>bias;
+
+
+
 	int node_num;
 };
 class hidden_layer : public layer {
@@ -39,14 +43,14 @@ public:
 	
 	void init();
 	std::vector<double> h_new;
-	std::vector<std::vector<double>> h_states;
+	
 	std::vector <std::vector <double>> w_to_h;
 	std::vector <std::vector <double>> h_to_h;
 	std::vector <std::vector <double>> h_to_o;
 	std::vector <double> bias;
 	int node_pre_num, node_next_num , node_num;
 
-
+	
 
 };
 

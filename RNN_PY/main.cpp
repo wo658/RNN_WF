@@ -36,8 +36,6 @@ int main() {
 			max_y = y_train[i][0];
 		if (min_y > y_train[i][0])
 			min_y = y_train[i][0];
-
-
 	}
 
 	//cout << max << " " << min << endl;
@@ -58,22 +56,28 @@ int main() {
 	in_layer i(x_train[0].size());
 	out_layer o(1);
 	h.init();
-	rnn rnn(h,o,i);
+	rnn rnn(h,o,i,x_train.size());
 	double output = 0;
 	double exp,error=0;
+
+
 
 	for (int epoch = 1; epoch < 10; epoch++) {
 		for (int train_size = 0; train_size < x_train.size(); train_size++) {
 
-
-
-			exp = rnn.feedforward(x_train[train_size]);
-			error += (exp - y_train[train_size][0]) * ( exp - y_train[train_size][0]);
-			//	rnn.backpropagation();
+			rnn.feedforward(x_train[train_size],train_size);
 			
+			error = (rnn.outputs[train_size] - y_train[train_size][0]) * (rnn.outputs[train_size] - y_train[train_size][0]);
+
+			if(train_size%1000 ==0)
+				cout << train_size << "error is : " << error << endl;
+
+
 
 		}
-		cout << epoch << "epoch is : " << error << endl;
+		
+		rnn.backpropagation(x_train,y_train);
+		
 		error = 0;
 
 	}
