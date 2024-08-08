@@ -24,12 +24,6 @@
     <ClCompile Include="csvparser.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="layer.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="rnn.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MLP_Functions.h">
@@ -38,10 +32,7 @@
     <ClInclude Include="csvparser.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="layer.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="rnn.h">
+    <ClInclude Include="RNN.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

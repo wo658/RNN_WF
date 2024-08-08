@@ -1,33 +1,163 @@
-#ifndef RNN
-#define RNN
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <random>
+#include <cassert>
 
-#include "layer.h"
+// Random number generator
+std::random_device rd;
+std::mt19937 gen(rd());
 
-class rnn {
+// Utility function to initialize weights with small random values
+double initWeight() {
+    std::uniform_real_distribution<> dis(-0.1, 0.1);
+    return dis(gen);
+}
+
+// Sigmoid activation function
+double sigmoid(double x) {
+    return 1.0 / (1.0 + exp(-x));
+}
+
+// Derivative of sigmoid activation function
+double sigmoidDerivative(double x) {
+    return x * (1 - x);
+}
+
+
+class RNN {
+private:
+    int inputSize;
+    int hiddenSize;
+    int outputSize;
+    std::vector<double> hiddenState;
+    std::vector<std::vector<double>> hiddenStates;
+    std::vector<std::vector<double>> Wih;  // Weights from input to hidden
+    std::vector<std::vector<double>> Whh;  // Weights from hidden to hidden
+    std::vector<std::vector<double>> Who;  // Weights from hidden to output
+    double learningRate;
+
 public:
-	rnn(hidden_layer& h, out_layer& o, in_layer& i , int train_size);
-	
+    RNN(int i, int h, int o, double lr = 0.01) : inputSize(i), hiddenSize(h), outputSize(o), learningRate(lr) {
+        // Initialize hidden state
+        hiddenState.resize(hiddenSize, 0.0);
 
-	hidden_layer h_layer;
-	out_layer o_layer;
-	in_layer i_layer;
-	int train_size;
+        // Initialize weights
+        Wih.resize(inputSize, std::vector<double>(hiddenSize));
+        Whh.resize(hiddenSize, std::vector<double>(hiddenSize));
+        Who.resize(hiddenSize, std::vector<double>(outputSize));
 
+        for (int i = 0; i < inputSize; ++i)
+            for (int h = 0; h < hiddenSize; ++h)
+                Wih[i][h] = initWeight();
 
-	// w 값 계산을 위한 기울기 저장
-	std::vector<std::vector<double>> w_ih;
-	std::vector<std::vector<double>> w_hh;
-	std::vector<std::vector<double>> w_oh;
+        for (int h = 0; h < hiddenSize; ++h)
+            for (int hh = 0; hh < hiddenSize; ++hh)
+                Whh[h][hh] = initWeight();
 
+        for (int h = 0; h < hiddenSize; ++h)
+            for (int o = 0; o < outputSize; ++o)
+                Who[h][o] = initWeight();
+    }
 
+    std::vector<std::vector<double>> forward(std::vector<std::vector<double>>& inputs) {
+        std::vector<std::vector<double>> outputs(inputs.size(), std::vector<double>(outputSize, 0.0));
+        hiddenStates.clear();
+        hiddenStates.push_back(hiddenState); // Save initial state
 
-	std::vector<std::vector<double>> h_states;
-	std::vector<double> outputs;
-	std::vector<std::vector<double>> at;
+        for (size_t t = 0; t < inputs.size(); ++t) {
+            std::vector<double>& input = inputs[t];
+            std::vector<double> newHidden(hiddenSize, 0.0);
 
-	void feedforward(std::vector < double >& train  , int timestep);
-	void backpropagation(std::vector<std::vector < double >>& train_x , std::vector<std::vector < double >>& train_y);
+            for (int h = 0; h < hiddenSize; ++h) {
+                for (int i = 0; i < inputSize; ++i)
+                    newHidden[h] += input[i] * Wih[i][h];
+                for (int hh = 0; hh < hiddenSize; ++hh) 
+                    newHidden[h] += hiddenState[hh] * Whh[hh][h];
+                newHidden[h] = sigmoid(newHidden[h]);
+            }
+
+            hiddenStates.push_back(newHidden); // Save state for backprop
+            hiddenState = newHidden;
+
+            for (int o = 0; o < outputSize; ++o) {
+                for (int h = 0; h < hiddenSize; ++h)
+                    outputs[t][o] += hiddenState[h] * Who[h][o];
+                outputs[t][o] = sigmoid(outputs[t][o]);
+            }
+        }
+
+        return outputs;
+    }
+
+    void backward(std::vector<std::vector<double>>& inputs, std::vector<std::vector<double>>& targets) {
+        std::vector<std::vector<double>> dWhoSum(hiddenSize, std::vector<double>(outputSize, 0.0));
+        std::vector<std::vector<double>> dWihSum(inputSize, std::vector<double>(hiddenSize, 0.0));
+        std::vector<std::vector<double>> dWhhSum(hiddenSize, std::vector<double>(hiddenSize, 0.0));
+        std::vector<double> nextHiddenDelta(hiddenSize, 0.0);
+
+        for (int t = inputs.size() - 1; t >= 0; --t) {
+            std::vector<double> outputDelta(outputSize, 0.0);
+            std::vector<double> hiddenDelta(hiddenSize, 0.0);
+
+            // Calculate output deltas
+            for (int o = 0; o < outputSize; ++o) {
+                double error = targets[t][o] - sigmoid(hiddenStates[t + 1][o]);
+                outputDelta[o] = error * sigmoidDerivative(hiddenStates[t + 1][o]);
+            }
+
+            // Calculate hidden deltas
+            for (int h = 0; h < hiddenSize; ++h) {
+                double error = 0.0;
+                for (int o = 0; o < outputSize; ++o)
+                    error += outputDelta[o] * Who[h][o];
+                for (int hh = 0; hh < hiddenSize; ++hh)
+                    error += nextHiddenDelta[hh] * Whh[h][hh];
+                hiddenDelta[h] = error * sigmoidDerivative(hiddenStates[t + 1][h]);
+            }
+
+            nextHiddenDelta = hiddenDelta; // Save for next timestep
+
+            // Accumulate weight changes
+            for (int h = 0; h < hiddenSize; ++h) {
+                for (int o = 0; o < outputSize; ++o) {
+                    dWhoSum[h][o] += hiddenStates[t + 1][h] * outputDelta[o];
+                }
+            }
+
+            std::vector<double>& input = inputs[t];
+            for (int i = 0; i < inputSize; ++i) {
+                for (int h = 0; h < hiddenSize; ++h) {
+                    dWihSum[i][h] += input[i] * hiddenDelta[h];
+                }
+            }
+
+            for (int h = 0; h < hiddenSize; ++h) {
+                for (int hh = 0; hh < hiddenSize; ++hh) {
+                    dWhhSum[h][hh] += hiddenStates[t][hh] * hiddenDelta[h];
+                }
+            }
+        }
+
+        // Update weights hidden to out
+        for (int h = 0; h < hiddenSize; ++h) {
+            for (int o = 0; o < outputSize; ++o) {
+                Who[h][o] += learningRate * dWhoSum[h][o];
+            }
+        }
+        // in to hidden
+        for (int i = 0; i < inputSize; ++i) {
+            for (int h = 0; h < hiddenSize; ++h) {
+                Wih[i][h] += learningRate * dWihSum[i][h];
+            }
+        }
+        // hidden to hidden
+        for (int h = 0; h < hiddenSize; ++h) {
+            for (int hh = 0; hh < hiddenSize; ++hh) {
+                Whh[h][hh] += learningRate * dWhhSum[h][hh];
+            }
+        }
+    }
 
 };
 
-#endif 
