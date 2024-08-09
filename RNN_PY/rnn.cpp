@@ -1,13 +1,12 @@
 #include "rnn.h"
 #include <iostream>
 
-double tanh(double x) {
-	double ex = std::exp(x);
-	double ex_inv = std::exp(-x);
-	return (ex - ex_inv) / (ex + ex_inv);
+double tanh_function(double x) {
+	return std::tanh(x); 
 }
 double tanh_derivative(double x) {
-	return 1.0 - x * x; // tanh'(x) = 1 - tanh^2(x)
+	double tanh_x = tanh_function(x); 
+	return 1.0 - tanh_x * tanh_x; 
 }
 
 rnn::rnn(hidden_layer& h, out_layer& o, in_layer& i , int size) : h_layer(h), o_layer(o), i_layer(i),train_size(size) {
@@ -95,50 +94,54 @@ void rnn::feedforward(std::vector<double>& train, int timestep) {
 
 
 
-void rnn::backpropagation(std::vector<std::vector<double>>& train_x, std::vector<std::vector<double>>& train_y) {
+void rnn::backpropagation( std::vector<std::vector<double>>& train_x, std::vector<std::vector<double>>& train_y) {
+    double learning_rate = 0.0001;
+    const int num_hidden_units = 30;
 
-	double learning_rate = 0.0001; // 학습률 설정
+    std::vector<std::vector<double>> deltas(train_x.size(), std::vector<double>(num_hidden_units, 0.0));
 
-								 // Timestep을 역으로 되짚으며 BackPropagation
-	for (int i = train_x.size() - 1; i >= 0; i--) {
+    // Iterate backward through timesteps
+    for (int i = train_x.size() - 1; i >= 0; i--) {
+        // Output layer error
+        double output_error = train_y[i][0] - outputs[i];
+        std::vector<double> output_deltas(num_hidden_units, 0.0);
+        output_deltas[0] = output_error;
 
-		std::vector<double> deltas(30, 0.0);
+        // Backpropagate error to hidden layer
+        for (int j = 0; j < num_hidden_units; j++) {
+            double delta = output_error * h_layer.h_to_o[j][0] * tanh_derivative(h_states[i][j]);
+            deltas[i][j] = delta;
 
-		// 1. Output Layer Error and Delta Calculation
-		for (int j = 0; j < 30; j++) {
-			double output_error = train_y[i][0] - outputs[i]; // 출력과 실제 값의 차이
-			double delta = output_error * tanh_derivative(outputs[i]); // 출력층의 델타
+            // Update Hidden to Output Weights
+            h_layer.h_to_o[j][0] -= learning_rate * delta * h_states[i][j];
+        }
 
-			deltas[j] = delta; // Backpropagation을 위해 델타값 저장
+        // Hidden Layer(s) Error and Delta Calculation
+        for (int j = 0; j < num_hidden_units; j++) {
+            double delta = 0.0;
+            if (i < train_x.size() - 1) { // Not the last timestep
+                for (int k = 0; k < num_hidden_units; k++) {
+                    delta += deltas[i + 1][k] * h_layer.h_to_h[j][k] * tanh_derivative(h_states[i][j]);
+                }
+            } else {
+                // Handle the last timestep
+                delta = output_error * tanh_derivative(h_states[i][j]);
+            }
 
-							   // Update: Hidden to Output Weights
-			h_layer.h_to_o[j][0] -= learning_rate * delta * h_states[i][j];
-		}
+            // Update Input to Hidden Weights
+            for (int k = 0; k < train_x[0].size(); k++) {
+                h_layer.w_to_h[k][j] -= learning_rate * delta * train_x[i][k];
+            }
 
-		// 2. Hidden Layer(s) Error and Delta Calculation
-		for (int j = 0; j < 30; j++) {
-			double delta = deltas[j];
-
-			if (i != train_x.size() - 1) {  // 마지막 타임스텝이 아닌 경우, 다음 타임스텝의 델타값을 고려하여 계산
-				for (int k = 0; k < 30; k++) {
-					delta += deltas[k] * h_layer.h_to_h[j][k] * tanh_derivative(at[i][j]);
-				}
-			}
-
-			deltas[j] = delta;
-
-			// Update 1: Input to Hidden Weights
-			for (int k = 0; k < train_x[0].size(); k++) {
-				h_layer.w_to_h[k][j] -= learning_rate * delta * train_x[i][k];
-			}
-
-			// Update 2: Hidden to Hidden Weights
-			for (int k = 0; k < 30; k++) {
-				double pre_node = (i != 0) ? h_states[i - 1][k] : 0.0;
-				h_layer.h_to_h[k][j] -= learning_rate * delta * pre_node;
-			}
-
-		}
-	}
+            // Update Hidden to Hidden Weights
+            if (i > 0) { // Not the first timestep
+                for (int k = 0; k < num_hidden_units; k++) {
+                    double pre_node = h_states[i - 1][k];
+                    h_layer.h_to_h[k][j] -= learning_rate * delta * pre_node;
+                }
+            }
+        }
+    }
 }
+
 
