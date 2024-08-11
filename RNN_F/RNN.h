@@ -20,8 +20,9 @@ double tanhActivation(double x) {
 }
 
 // Derivative of tanh activation function
-double tanhDerivative(double x) {
-	return 1.0 - x * x;  
+double tanh_derivative(double x) {
+	double tanh_value = tanh(x);
+	return 1.0 - pow(tanh_value, 2); 
 }
 
 class RNN {
@@ -58,7 +59,7 @@ public:
 				Who[h][o] = initWeight();
 	}
 
-	std::vector<std::vector<double>> forward(std::vector<std::vector<double>>& inputs) {
+	std::vector<std::vector<double>> forward(std::vector<std::vector<double>>& inputs ) {
 		std::vector<std::vector<double>> outputs(inputs.size(), std::vector<double>(outputSize, 0.0));
 		hiddenStates.clear();
 
@@ -80,14 +81,13 @@ public:
 			for (int o = 0; o < outputSize; ++o) {
 				for (int h = 0; h < hiddenSize; ++h)
 					outputs[t][o] += hiddenState[h] * Who[h][o];
-				outputs[t][o];
 			}
 		}
 
 		return outputs;
 	}
 
-	void backward(std::vector<std::vector<double>>& inputs, std::vector<std::vector<double>>& targets, double clipValue) {
+	void backward(std::vector<std::vector<double>>& inputs, std::vector<std::vector<double>>& targets, std::vector<std::vector<double>>& outputs, double clipValue) {
 		std::vector<std::vector<double>> dWhoSum(hiddenSize, std::vector<double>(outputSize, 0.0));
 		std::vector<std::vector<double>> dWihSum(inputSize, std::vector<double>(hiddenSize, 0.0));
 		std::vector<std::vector<double>> dWhhSum(hiddenSize, std::vector<double>(hiddenSize, 0.0));
@@ -98,8 +98,8 @@ public:
 			std::vector<double> hiddenDelta(hiddenSize, 0.0);
 
 			for (int o = 0; o < outputSize; ++o) {
-				double error = targets[t][o] - tanhActivation(hiddenStates[t][o]);
-				outputDelta[o] = error * tanhDerivative(hiddenStates[t][o]);
+				double error = (-targets[t][o] + outputs[t][o]) ;
+				outputDelta[o] = error * tanh_derivative(hiddenStates[t][o]);
 			}
 
 			for (int h = 0; h < hiddenSize; ++h) {
@@ -108,7 +108,7 @@ public:
 					error += outputDelta[o] * Who[h][o];
 				for (int hh = 0; hh < hiddenSize; ++hh)
 					error += nextHiddenDelta[hh] * Whh[h][hh];
-				hiddenDelta[h] = error * tanhDerivative(hiddenStates[t][h]);
+				hiddenDelta[h] = error * tanh_derivative(hiddenStates[t][h]);
 			}
 
 			nextHiddenDelta = hiddenDelta;
@@ -131,7 +131,7 @@ public:
 				}
 			}
 		}
-
+		
 		// Gradient Clipping
 		for (int h = 0; h < hiddenSize; ++h) {
 			for (int o = 0; o < outputSize; ++o) {
@@ -152,20 +152,21 @@ public:
 		// Update 
 		for (int h = 0; h < hiddenSize; ++h) {
 			for (int o = 0; o < outputSize; ++o) {
-				Who[h][o] += learningRate * dWhoSum[h][o];
+				Who[h][o] -= learningRate * dWhoSum[h][o];
 			}
 		}
 		for (int i = 0; i < inputSize; ++i) {
 			for (int h = 0; h < hiddenSize; ++h) {
-				Wih[i][h] += learningRate * dWihSum[i][h];
+				Wih[i][h] -= learningRate * dWihSum[i][h];
 			}
 		}
 		for (int h = 0; h < hiddenSize; ++h) {
 			for (int hh = 0; hh < hiddenSize; ++hh) {
-				Whh[h][hh] += learningRate * dWhhSum[h][hh];
+				Whh[h][hh] -= learningRate * dWhhSum[h][hh];
 			}
 		}
 	}
 
 
 };
+
