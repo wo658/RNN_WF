@@ -131,7 +131,11 @@ public:
 				}
 			}
 		}
+<<<<<<< HEAD
 		/*
+=======
+		
+>>>>>>> 6532bfa763ac38ce8fca9cd68361bb6f544ab0d3
 		// Gradient Clipping
 		for (int h = 0; h < hiddenSize; ++h) {
 			for (int o = 0; o < outputSize; ++o) {
@@ -169,3 +173,4 @@ public:
 
 
 };
+
